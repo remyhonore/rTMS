@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Registre rTMS douleur — v0.1.12</title>
+  <title>Registre rTMS douleur — v0.1.14</title>
   <meta name="description" content="Registre vie réelle rTMS douleur chronique — saisie multi-patients, règles qualité, export CSV + synthèse clinique PDF (impression)." />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -15,30 +15,34 @@
       <div class="app-title">
         <span class="app-badge">rTMS</span>
         <span class="app-name">Registre douleur</span>
-        <span class="app-version">v0.1.11</span>
+        <span class="app-version">v0.1.14</span>
       </div>
       <div class="app-subtitle">Saisie rapide • Qualité des données • Exports exploitables</div>
     </div>
     <div class="topbar-right">
-      <button id="btnBackupExport" class="btn btn-secondary" type="button" title="Exporter la base (JSON)">Backup</button>
-      <label class="btn btn-secondary file-btn" title="Importer un backup (JSON)">
+      <div class="mode-toggle" role="group" aria-label="Choisir le parcours">
+        <button id="btnModePatient" class="btn btn-secondary" type="button" title="Parcours patient hospitalisé (ultra simple)">Mode patient</button>
+        <button id="btnModeClinicien" class="btn btn-secondary" type="button" title="Parcours clinicien (complet)">Mode clinicien</button>
+      </div>
+      <button id="btnBackupExport" class="btn btn-secondary clinician-only" type="button" title="Exporter la base (JSON)">Backup</button>
+      <label class="btn btn-secondary file-btn clinician-only" title="Importer un backup (JSON)">
         Import
         <input id="fileBackupImport" type="file" accept="application/json" />
       </label>
-      <button id="btnReset" class="btn btn-danger" type="button" title="Réinitialiser (efface la base locale)">Reset</button>
+      <button id="btnReset" class="btn btn-danger clinician-only" type="button" title="Réinitialiser (efface la base locale)">Reset</button>
     </div>
   </header>
 
   <nav class="tabs" aria-label="Navigation">
     <button class="tab active" data-view="patients" type="button">Patients</button>
     <button class="tab" data-view="dashboard" type="button">Tableau de bord</button>
-    <button class="tab" data-view="seances" type="button">Séances</button>
+    <button class="tab clinician-only" data-view="seances" type="button">Séances</button>
     <button class="tab" data-view="suivi" type="button">Suivi</button>
     <button class="tab" data-view="ei" type="button">Événements indésirables</button>
-    <button class="tab" data-view="qualite" type="button">Qualité</button>
-    <button class="tab" data-view="protocole" type="button">Protocole</button>
-    <button class="tab" data-view="export" type="button">Export</button>
-    <button class="tab" data-view="dictionnaire" type="button">Dictionnaire</button>
+    <button class="tab clinician-only" data-view="qualite" type="button">Qualité</button>
+    <button class="tab clinician-only" data-view="protocole" type="button">Protocole</button>
+    <button class="tab clinician-only" data-view="export" type="button">Export</button>
+    <button class="tab clinician-only" data-view="dictionnaire" type="button">Dictionnaire</button>
   </nav>
 
   <main id="main" class="container" role="main">
@@ -47,7 +51,7 @@
         <h1 id="hPatients">Patients</h1>
         <div class="view-actions">
           <input id="patientSearch" class="input" type="search" placeholder="Rechercher (initiales, ID, indication)..." aria-label="Rechercher un patient" />
-          <button id="btnNewPatient" class="btn" type="button">+ Ajouter</button>
+          <button id="btnNewPatient" class="btn clinician-only" type="button">+ Ajouter</button>
         </div>
       </div>
 
@@ -58,7 +62,7 @@
           <div class="hint">Astuce : clique un patient pour accéder aux saisies (séances, suivi, EI).</div>
         </div>
 
-        <div class="card">
+        <div class="card clinician-only">
           <h2>Fiche patient (inclusion)</h2>
           <form id="formPatient" autocomplete="off">
             <div class="form-row">
@@ -192,18 +196,19 @@
         <h1 id="hDashboard">Tableau de bord patient</h1>
         <div class="view-actions">
           <select id="selPatientDashboard" class="input" aria-label="Choisir un patient"></select>
-          <button id="btnDashToPatients" class="btn btn-secondary" type="button">Fiche inclusion</button>
-          <button id="btnDashToSeances" class="btn btn-secondary" type="button">Séances</button>
-          <button id="btnDashAddSeance" class="btn" type="button">Ajouter une séance</button>
+          <button id="btnDashToPatients" class="btn btn-secondary clinician-only" type="button">Fiche inclusion</button>
+          <button id="btnDashToSeances" class="btn btn-secondary clinician-only" type="button">Séances</button>
+          <button id="btnDashAddSeance" class="btn clinician-only" type="button">Ajouter une séance</button>
           <button id="btnDashToSuivi" class="btn btn-secondary" type="button">Suivi</button>
           <button id="btnDashAddSuivi" class="btn" type="button">Ajouter un suivi</button>
           <button id="btnDashToEI" class="btn btn-secondary" type="button">EI</button>
           <button id="btnDashAddEI" class="btn" type="button">Ajouter un EI</button>
-          <button id="btnDashToProtocole" class="btn btn-secondary" type="button">Protocole</button>
-          <button id="btnDashToPDF" class="btn" type="button">Synthèse (PDF)</button>
-          <button id="btnDashOnePage" class="btn" type="button">Résumé (1 page)</button>
-          <button id="btnDashExportPatient" class="btn" type="button">Dossier patient (CSV)</button>
-          <button id="btnDashExportPatientZip" class="btn" type="button">Dossier patient (ZIP)</button>
+          <button id="btnDashHistory" class="btn btn-secondary clinician-only" type="button">Historique</button>
+          <button id="btnDashToProtocole" class="btn btn-secondary clinician-only" type="button">Protocole</button>
+          <button id="btnDashToPDF" class="btn clinician-only" type="button">Synthèse (PDF)</button>
+          <button id="btnDashOnePage" class="btn clinician-only" type="button">Résumé (1 page)</button>
+          <button id="btnDashExportPatient" class="btn clinician-only" type="button">Dossier patient (CSV)</button>
+          <button id="btnDashExportPatientZip" class="btn clinician-only" type="button">Dossier patient (ZIP)</button>
           <span id="dashExportStatus" class="status" aria-live="polite"></span>
         </div>
       </div>
@@ -230,7 +235,27 @@
         <div class="card">
           <h2>Qualité patient actif</h2>
           <div id="dashAlerts" class="dash-alerts"></div>
+        
+      <div class="card" id="dashHistory" style="margin-top:14px;">
+        <h2>Historique patient (3 derniers)</h2>
+        <div class="grid-3">
+          <div>
+            <h3 class="subhead">Séances</h3>
+            <div id="dashHistorySeances" class="mini-list"></div>
+          </div>
+          <div>
+            <h3 class="subhead">Suivi</h3>
+            <div id="dashHistorySuivi" class="mini-list"></div>
+          </div>
+          <div>
+            <h3 class="subhead">EI</h3>
+            <div id="dashHistoryEI" class="mini-list"></div>
+          </div>
         </div>
+        <div class="hint">Astuce : clique un élément pour ouvrir directement la fiche correspondante.</div>
+      </div>
+
+</div>
       </div>
 
       <div class="card" style="margin-top:14px;">

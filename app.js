@@ -4,7 +4,8 @@
   // NOTE : on garde volontairement la même clé de stockage local sur la branche 0.1.x
   // pour éviter toute régression (perte des données existantes dans le navigateur).
   const STORE_KEY = "rtms_registry_v0_1_0";
-  const SCHEMA_VERSION = "0.1.11";
+  const SCHEMA_VERSION = "0.1.14";
+  const UI_MODE_KEY = "rtms_ui_mode"; // "patient" | "clinicien"
 
   // --------- Dictionnaire de données (v1) ----------
   const DATA_DICTIONARY = [
@@ -224,8 +225,32 @@ function normalizeState(obj){
     localStorage.setItem(STORE_KEY, JSON.stringify(state));
   }
 
+  // --------- Parcours dual (patient / clinicien) ----------
+  let uiMode = (localStorage.getItem(UI_MODE_KEY) || "clinicien");
+
+  function setUIMode(mode){
+    uiMode = (mode === "patient") ? "patient" : "clinicien";
+    localStorage.setItem(UI_MODE_KEY, uiMode);
+    applyUIMode();
+  }
+
+  function applyUIMode(){
+    document.body.classList.toggle("mode-patient", uiMode === "patient");
+    const bP = qs("#btnModePatient");
+    const bC = qs("#btnModeClinicien");
+    if(bP) bP.classList.toggle("active", uiMode === "patient");
+    if(bC) bC.classList.toggle("active", uiMode === "clinicien");
+  }
+
+  function isViewAllowed(view){
+    if(uiMode !== "patient") return true;
+    // Parcours patient : on limite aux actions fréquentes.
+    return ["dashboard","suivi","ei"].includes(view);
+  }
+
   // --------- Navigation ----------
   function setView(view){
+    if(!isViewAllowed(view)) view = "dashboard";
     qsa(".tab").forEach(b => b.classList.toggle("active", b.dataset.view === view));
     qsa(".view").forEach(v => v.classList.add("hidden"));
     qs("#view-"+view).classList.remove("hidden");
@@ -1318,6 +1343,9 @@ function renderDashboard(){
     const completenessEl = qs("#dashCompleteness");
     const evolutionEl = qs("#dashEvolution");
     const alertsEl = qs("#dashAlerts");
+    const hSeancesEl = qs("#dashHistorySeances");
+    const hSuiviEl = qs("#dashHistorySuivi");
+    const hEiEl = qs("#dashHistoryEI");
     const protoEl = qs("#dashProtocol");
     const sel = qs("#selPatientDashboard");
     if(!identityEl || !completenessEl || !evolutionEl || !alertsEl || !sel) return;
@@ -1328,6 +1356,9 @@ function renderDashboard(){
       completenessEl.innerHTML = `<div class="hint">—</div>`;
       evolutionEl.innerHTML = `<div class="hint">—</div>`;
       alertsEl.innerHTML = `<div class="hint">—</div>`;
+      if(hSeancesEl) hSeancesEl.innerHTML = `<div class="hint">—</div>`;
+      if(hSuiviEl) hSuiviEl.innerHTML = `<div class="hint">—</div>`;
+      if(hEiEl) hEiEl.innerHTML = `<div class="hint">—</div>`;
       if(protoEl) protoEl.innerHTML = `<div class="hint">—</div>`;
       return;
     }
@@ -1340,6 +1371,9 @@ function renderDashboard(){
       completenessEl.innerHTML = `<div class="hint">—</div>`;
       evolutionEl.innerHTML = `<div class="hint">—</div>`;
       alertsEl.innerHTML = `<div class="hint">—</div>`;
+      if(hSeancesEl) hSeancesEl.innerHTML = `<div class="hint">—</div>`;
+      if(hSuiviEl) hSuiviEl.innerHTML = `<div class="hint">—</div>`;
+      if(hEiEl) hEiEl.innerHTML = `<div class="hint">—</div>`;
       if(protoEl) protoEl.innerHTML = `<div class="hint">—</div>`;
       return;
     }
@@ -1347,6 +1381,8 @@ function renderDashboard(){
     const seances = getSeancesForPatient(pid);
     const suivi = getSuiviForPatient(pid);
     const eis = getEIForPatient(pid);
+
+    renderDashboardHistory(pid, seances, suivi, eis);
 
     // Identité minimale + contexte
     identityEl.innerHTML = `
@@ -1666,6 +1702,95 @@ if(protoEl){
       + section("Incohérences", incohBody)
       + section("Infos", infoBody);
   }
+
+
+  function renderDashboardHistory(pid, seances, suivi, eis){
+    const hSeancesEl = qs("#dashHistorySeances");
+    const hSuiviEl = qs("#dashHistorySuivi");
+    const hEiEl = qs("#dashHistoryEI");
+    if(!hSeancesEl && !hSuiviEl && !hEiEl) return;
+
+    const fmt = (d) => d ? esc(d) : "—";
+    const safeDate = (d) => {
+      if(!d) return 0;
+      const t = Date.parse(d);
+      return isNaN(t) ? 0 : t;
+    };
+
+    const topN = (arr, dateField) => [...arr]
+      .sort((a,b) => safeDate(b[dateField]) - safeDate(a[dateField]))
+      .slice(0,3);
+
+    const mkItem = ({title, sub, onClickAttr}) => `
+      <div class="mini-item" role="button" tabindex="0" ${onClickAttr}>
+        <div class="mtop">
+          <div class="mdate">${esc(title)}</div>
+          <div class="mtag">ouvrir</div>
+        </div>
+        <div class="msub">${esc(sub)}</div>
+      </div>
+    `;
+
+    const seTop = topN(seances, "date");
+    const suTop = topN(suivi, "date");
+    const eiTop = topN(eis, "date");
+
+    hSeancesEl && (hSeancesEl.innerHTML = seTop.length ? seTop.map(s => mkItem({
+      title: `${s.date || "—"}`,
+      sub: `Séance #${(s.numero ?? "—")} • ${s.cible ? esc(s.cible) : "—"}`,
+      onClickAttr: `data-open="seance" data-id="${esc(s.seance_id)}"`
+    })).join("") : `<div class="hint">Aucune séance.</div>`);
+
+    hSuiviEl && (hSuiviEl.innerHTML = suTop.length ? suTop.map(f => mkItem({
+      title: `${f.date || "—"}`,
+      sub: `Suivi • ${labelTemps(f.temps)}${f.point_protocole ? " • " + f.point_protocole : ""}`,
+      onClickAttr: `data-open="suivi" data-id="${esc(f.suivi_id)}"`
+    })).join("") : `<div class="hint">Aucun suivi.</div>`);
+
+    hEiEl && (hEiEl.innerHTML = eiTop.length ? eiTop.map(e => mkItem({
+      title: `${e.date || "—"}`,
+      sub: `EI • ${labelSev(e.severite)} • ${e.issue ? esc(e.issue) : "—"}`,
+      onClickAttr: `data-open="ei" data-id="${esc(e.ei_id)}"`
+    })).join("") : `<div class="hint">Aucun EI.</div>`);
+
+    // Delegate clicks/keyboard on history cards
+    const root = qs("#dashHistory");
+    if(!root) return;
+
+    root.querySelectorAll(".mini-item").forEach(el => {
+      const handler = () => {
+        const kind = el.getAttribute("data-open");
+        const id = el.getAttribute("data-id");
+        if(!kind || !id) return;
+        setCurrentPatient(pid);
+        if(kind === "seance"){
+          setView("seances");
+          renderSeances();
+          loadSeanceForm(id);
+          qs("#formSeance")?.scrollIntoView({behavior:"smooth", block:"start"});
+        }else if(kind === "suivi"){
+          setView("suivi");
+          renderSuivi();
+          loadSuiviForm(id);
+          qs("#formSuivi")?.scrollIntoView({behavior:"smooth", block:"start"});
+        }else if(kind === "ei"){
+          setView("ei");
+          renderEI();
+          loadEiForm(id);
+          qs("#formEI")?.scrollIntoView({behavior:"smooth", block:"start"});
+        }
+      };
+      el.addEventListener("click", handler);
+      el.addEventListener("keydown", (ev) => {
+        if(ev.key === "Enter" || ev.key === " "){
+          ev.preventDefault();
+          handler();
+        }
+      });
+    });
+  }
+
+
 
   // --------- Qualité ----------
   function renderQualityEmpty(){
@@ -2591,6 +2716,10 @@ if(protoEl){
 
   // --------- Wire UI ----------
   function bind(){
+    // parcours dual (patient / clinicien)
+    if(qs("#btnModePatient")) qs("#btnModePatient").addEventListener("click", () => setUIMode("patient"));
+    if(qs("#btnModeClinicien")) qs("#btnModeClinicien").addEventListener("click", () => setUIMode("clinicien"));
+
     // tabs
     qsa(".tab").forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
 
@@ -2666,6 +2795,14 @@ if(protoEl){
         setStatus("#dashExportStatus", `✅ Export lancé : dossier patient (ZIP) ${pid}.`);
       });
     }
+
+    if(qs("#btnDashHistory")){
+      qs("#btnDashHistory").addEventListener("click", () => {
+        const el = qs("#dashHistory");
+        if(el) el.scrollIntoView({behavior:"smooth", block:"start"});
+      });
+    }
+
     qs("#btnDashToProtocole").addEventListener("click", () => {
       setView("protocole");
       renderProtocole();
@@ -2813,6 +2950,7 @@ if(qs("#btnProtoTemplateSemaines")){
 
   function init(){
     bind();
+    applyUIMode();
     refreshPatientSelects();
     renderPatientsList();
     renderDictionary();
@@ -2825,7 +2963,7 @@ if(qs("#btnProtoTemplateSemaines")){
     }else{
       resetPatientForm();
     }
-    setView("patients");
+    setView(uiMode === "patient" ? "dashboard" : "patients");
   }
 
   init();

@@ -1,4 +1,4 @@
-# Registre rTMS douleur — v0.1.11
+# Registre rTMS douleur — v0.1.14
 
 Application web **local-only** (aucun envoi de données) pour un registre “vie réelle” rTMS en douleur chronique :
 - eCRF minimal : inclusion + séances + suivi + événements indésirables
@@ -6,7 +6,12 @@ Application web **local-only** (aucun envoi de données) pour un registre “vie
 - export CSV (tables) + synthèse clinique imprimable (PDF via “Imprimer → Enregistrer en PDF”)
 - backup/restore (JSON)
 
-## Nouveau (v0.1.11)
+## Nouveau (v0.1.14)
+- **Parcours dual** : bouton en haut “Mode patient” vs “Mode clinicien”.
+- En **mode patient**, l’interface masque les fonctions non nécessaires au lit du patient (ex. export/dictionnaire/protocole/qualité, backup/reset).
+- En **mode clinicien**, l’interface reste complète (comportement par défaut).
+
+## Rappel (v0.1.13)
 - **Résumé patient (1 page)** depuis le tableau de bord :
   - ouvre une fenêtre “résumé 1 page” optimisée impression,
   - bouton **Imprimer / enregistrer en PDF** (via l’outil du navigateur),
