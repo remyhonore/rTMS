@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Registre rTMS douleur — v0.1.11</title>
+  <meta name="description" content="Registre vie réelle rTMS douleur chronique — saisie multi-patients, règles qualité, export CSV + synthèse clinique PDF (impression)." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Aller au contenu</a>
+
+  <header class="topbar" role="banner">
+    <div class="topbar-left">
+      <div class="app-title">
+        <span class="app-badge">rTMS</span>
+        <span class="app-name">Registre douleur</span>
+        <span class="app-version">v0.1.11</span>
+      </div>
+      <div class="app-subtitle">Saisie rapide • Qualité des données • Exports exploitables</div>
+    </div>
+    <div class="topbar-right">
+      <button id="btnBackupExport" class="btn btn-secondary" type="button" title="Exporter la base (JSON)">Backup</button>
+      <label class="btn btn-secondary file-btn" title="Importer un backup (JSON)">
+        Import
+        <input id="fileBackupImport" type="file" accept="application/json" />
+      </label>
+      <button id="btnReset" class="btn btn-danger" type="button" title="Réinitialiser (efface la base locale)">Reset</button>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Navigation">
+    <button class="tab active" data-view="patients" type="button">Patients</button>
+    <button class="tab" data-view="dashboard" type="button">Tableau de bord</button>
+    <button class="tab" data-view="seances" type="button">Séances</button>
+    <button class="tab" data-view="suivi" type="button">Suivi</button>
+    <button class="tab" data-view="ei" type="button">Événements indésirables</button>
+    <button class="tab" data-view="qualite" type="button">Qualité</button>
+    <button class="tab" data-view="protocole" type="button">Protocole</button>
+    <button class="tab" data-view="export" type="button">Export</button>
+    <button class="tab" data-view="dictionnaire" type="button">Dictionnaire</button>
+  </nav>
+
+  <main id="main" class="container" role="main">
+    <section id="view-patients" class="view" aria-labelledby="hPatients">
+      <div class="view-header">
+        <h1 id="hPatients">Patients</h1>
+        <div class="view-actions">
+          <input id="patientSearch" class="input" type="search" placeholder="Rechercher (initiales, ID, indication)..." aria-label="Rechercher un patient" />
+          <button id="btnNewPatient" class="btn" type="button">+ Ajouter</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2>Liste</h2>
+          <div id="patientsList" class="list" role="list"></div>
+          <div class="hint">Astuce : clique un patient pour accéder aux saisies (séances, suivi, EI).</div>
+        </div>
+
+        <div class="card">
+          <h2>Fiche patient (inclusion)</h2>
+          <form id="formPatient" autocomplete="off">
+            <div class="form-row">
+              <div class="form-field">
+                <label for="p_patientId">ID patient</label>
+                <input id="p_patientId" class="input" type="text" readonly />
+                <div class="field-help">Auto (P0001, P0002…)</div>
+              </div>
+              <div class="form-field">
+                <label for="p_initiales">Initiales *</label>
+                <input id="p_initiales" class="input" type="text" maxlength="6" placeholder="ex. RH" />
+              </div>
+            </div>
+
+
+<div class="form-row">
+  <div class="form-field">
+    <label for="f_point_proto">Point protocole (optionnel)</label>
+    <select id="f_point_proto" class="input">
+      <option value="">—</option>
+    </select>
+    <div class="field-help">Disponible si un protocole est défini pour le centre du patient.</div>
+  </div>
+  <div class="form-field">
+    <label for="f_point_proto_custom">Point (manuel)</label>
+    <input id="f_point_proto_custom" class="input" type="text" placeholder="ex. S15" disabled />
+    <div class="field-help">Uniquement si “manuel” est sélectionné.</div>
+  </div>
+</div>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label for="p_anneeNaissance">Année de naissance *</label>
+                <input id="p_anneeNaissance" class="input" type="number" min="1900" max="2100" placeholder="ex. 1987" />
+              </div>
+              <div class="form-field">
+                <label for="p_sexe">Sexe *</label>
+                <select id="p_sexe" class="input">
+                  <option value="">—</option>
+                  <option value="F">F</option>
+                  <option value="M">M</option>
+                  <option value="X">X / autre</option>
+                  <option value="ND">Non précisé</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label for="p_dateInclusion">Date d’inclusion *</label>
+                <input id="p_dateInclusion" class="input" type="date" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label for="p_indication">Indication principale *</label>
+                <select id="p_indication" class="input">
+                  <option value="">—</option>
+                  <option value="fibromyalgie">Fibromyalgie</option>
+                  <option value="douleur_neuropathique">Douleur neuropathique</option>
+                  <option value="post_infectieux">Post-infectieux / Covid long</option>
+                  <option value="douleur_rebelle">Douleur rebelle (autre)</option>
+                  <option value="autre">Autre</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label for="p_centre">Centre *</label>
+                <input id="p_centre" class="input" type="text" placeholder="ex. Institut Calot" />
+              </div>
+              <div class="form-field">
+                <label for="p_consentement">Consentement *</label>
+                <select id="p_consentement" class="input">
+                  <option value="">—</option>
+                  <option value="oui">Oui</option>
+                  <option value="non">Non</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+            <h3 class="subhead">État de base (NRS 0–10)</h3>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label for="p_douleurBase">Douleur *</label>
+                <input id="p_douleurBase" class="input" type="number" min="0" max="10" step="1" placeholder="0–10" />
+                <div class="field-help">0 = aucune, 10 = maximale</div>
+              </div>
+              <div class="form-field">
+                <label for="p_fatigueBase">Fatigue</label>
+                <input id="p_fatigueBase" class="input" type="number" min="0" max="10" step="1" placeholder="0–10" />
+              </div>
+              <div class="form-field">
+                <label for="p_sommeilBase">Sommeil</label>
+                <input id="p_sommeilBase" class="input" type="number" min="0" max="10" step="1" placeholder="0–10" />
+                <div class="field-help">0 = très mauvais, 10 = excellent</div>
+              </div>
+              <div class="form-field">
+                <label for="p_humeurBase">Humeur</label>
+                <input id="p_humeurBase" class="input" type="number" min="0" max="10" step="1" placeholder="0–10" />
+                <div class="field-help">0 = très mauvaise, 10 = excellente</div>
+              </div>
+            </div>
+
+            <details class="more">
+              <summary>Champs optionnels (ouvrir)</summary>
+              <div class="form-row">
+                <div class="form-field">
+                  <label for="p_antalgiques">Antalgiques (texte)</label>
+                  <input id="p_antalgiques" class="input" type="text" placeholder="ex. paracétamol 1g x2/j…" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-field">
+                  <label for="p_notes">Notes</label>
+                  <textarea id="p_notes" class="input" rows="3" placeholder="Comorbidités, contexte, précisions…"></textarea>
+                </div>
+              </div>
+            </details>
+
+            <div class="form-actions">
+              <button id="btnSavePatient" class="btn" type="submit">Enregistrer</button>
+              <button id="btnDeletePatient" class="btn btn-danger" type="button">Supprimer</button>
+              <span id="patientFormStatus" class="status" aria-live="polite"></span>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-dashboard" class="view hidden" aria-labelledby="hDashboard">
+      <div class="view-header">
+        <h1 id="hDashboard">Tableau de bord patient</h1>
+        <div class="view-actions">
+          <select id="selPatientDashboard" class="input" aria-label="Choisir un patient"></select>
+          <button id="btnDashToPatients" class="btn btn-secondary" type="button">Fiche inclusion</button>
+          <button id="btnDashToSeances" class="btn btn-secondary" type="button">Séances</button>
+          <button id="btnDashAddSeance" class="btn" type="button">Ajouter une séance</button>
+          <button id="btnDashToSuivi" class="btn btn-secondary" type="button">Suivi</button>
+          <button id="btnDashAddSuivi" class="btn" type="button">Ajouter un suivi</button>
+          <button id="btnDashToEI" class="btn btn-secondary" type="button">EI</button>
+          <button id="btnDashAddEI" class="btn" type="button">Ajouter un EI</button>
+          <button id="btnDashToProtocole" class="btn btn-secondary" type="button">Protocole</button>
+          <button id="btnDashToPDF" class="btn" type="button">Synthèse (PDF)</button>
+          <button id="btnDashOnePage" class="btn" type="button">Résumé (1 page)</button>
+          <button id="btnDashExportPatient" class="btn" type="button">Dossier patient (CSV)</button>
+          <button id="btnDashExportPatientZip" class="btn" type="button">Dossier patient (ZIP)</button>
+          <span id="dashExportStatus" class="status" aria-live="polite"></span>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2>Identité (minimale) & contexte</h2>
+          <div id="dashIdentity" class="dash-identity"></div>
+          <div class="hint">Le tableau de bord synthétise : complétude, évolution, alertes terrain. Il ne remplace pas l’interprétation clinique.</div>
+        </div>
+
+        <div class="card">
+          <h2>Complétude</h2>
+          <div id="dashCompleteness" class="dash-kpis"></div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:14px;">
+        <div class="card">
+          <h2>Évolution (résumé)</h2>
+          <div id="dashEvolution" class="dash-evolution"></div>
+        </div>
+
+        <div class="card">
+          <h2>Qualité patient actif</h2>
+          <div id="dashAlerts" class="dash-alerts"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <h2>Protocole (couverture & timeline)</h2>
+        <div id="dashProtocol" class="dash-protocol"></div>
+        <div class="hint">Le protocole peut être global ou spécifique à un centre. La timeline aide à repérer ce qui manque, sans surcharger la saisie.</div>
+      </div>
+    </section>
+
+    <section id="view-protocole" class="view hidden" aria-labelledby="hProtocole">
+  <div class="view-header">
+    <h1 id="hProtocole">Protocole (global / par centre)</h1>
+    <div class="view-actions">
+      <select id="selCentreProtocole" class="input" aria-label="Choisir un centre">
+        <option value="">— protocole global —</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>Paramètres</h2>
+      <form id="formProtocole" autocomplete="off">
+        <div class="form-row">
+          <div class="form-field">
+            <label for="proto_expected">Séances attendues</label>
+            <input id="proto_expected" class="input" type="number" min="0" step="1" placeholder="ex. 20" />
+            <div class="field-help">Laisser vide si non défini.</div>
+          </div>
+          <div class="form-field">
+            <label for="proto_mode">Points de suivi : type</label>
+            <select id="proto_mode" class="input">
+              <option value="seance">Par séance (S0, S10…)</option>
+              <option value="semaine">Par semaines (W0, W2…)</option>
+            </select>
+            <div class="field-help">Le préfixe est automatique (S ou W).</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field" style="grid-column:1 / -1;">
+            <label for="proto_points">Points de suivi attendus</label>
+            <input id="proto_points" class="input" type="text" placeholder="ex. 0,10,20,30" />
+            <div class="field-help">Liste séparée par des virgules. Exemple : 0,10,20,30.</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <button id="btnProtoTemplateCure" class="btn btn-secondary" type="button">Template cure</button>
+            <div class="field-help">S0,S10,S20,S30 (modifiable).</div>
+          </div>
+          <div class="form-field">
+            <button id="btnProtoTemplateSemaines" class="btn btn-secondary" type="button">Template semaines</button>
+            <div class="field-help">W0,W2,W4,W8 (modifiable).</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <button class="btn" type="submit">Enregistrer</button>
+          </div>
+          <div class="form-field">
+            <button id="btnProtoReset" class="btn btn-secondary" type="button">Réinitialiser</button>
+          </div>
+        </div>
+
+        <div id="protocoleStatus" class="status" role="status" aria-live="polite"></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Aperçu</h2>
+      <div id="protocolePreview" class="dash-protocol"></div>
+      <div class="hint">Le protocole par centre surcharge le protocole global. Le choix du centre sur la fiche patient détermine le protocole appliqué.</div>
+    </div>
+  </div>
+</section>
+
+    
+<section id="view-seances" class="view hidden" aria-labelledby="hSeances">
+      <div class="view-header">
+        <h1 id="hSeances">Séances rTMS</h1>
+        <div class="view-actions">
+          <select id="selPatientSeances" class="input" aria-label="Choisir un patient"></select>
+          <button id="btnNewSeance" class="btn" type="button">+ Ajouter</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2>Historique</h2>
+          <div id="seancesList" class="list" role="list"></div>
+        </div>
+
+        <div class="card">
+          <h2>Saisie séance</h2>
+          <form id="formSeance" autocomplete="off">
+            <input id="s_id" type="hidden" />
+            <div class="form-row">
+              <div class="form-field">
+                <label for="s_date">Date *</label>
+                <input id="s_date" class="input" type="date" />
+              </div>
+              <div class="form-field">
+                <label for="s_numero">N° séance *</label>
+                <input id="s_numero" class="input" type="number" min="1" max="999" step="1" placeholder="ex. 1" />
+              </div>
+            </div>
+
+            <details class="more" open>
+              <summary>Paramètres (optionnels mais utiles)</summary>
+              <div class="form-row">
+                <div class="form-field">
+                  <label for="s_cible">Cible</label>
+                  <select id="s_cible" class="input">
+                    <option value="">—</option>
+                    <option value="DLPFC">DLPFC</option>
+                    <option value="M1">M1</option>
+                    <option value="SMA">SMA</option>
+                    <option value="autre">Autre</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label for="s_lateralite">Latéralité</label>
+                  <select id="s_lateralite" class="input">
+                    <option value="">—</option>
+                    <option value="gauche">Gauche</option>
+                    <option value="droite">Droite</option>
+                    <option value="bilaterale">Bilatérale</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label for="s_frequence">Fréquence (Hz)</label>
+                  <input id="s_frequence" class="input" type="number" min="0" max="100" step="0.1" placeholder="ex. 10" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-field">
+                  <label for="s_intensite">Intensité (% seuil moteur)</label>
+                  <input id="s_intensite" class="input" type="number" min="0" max="200" step="1" placeholder="ex. 110" />
+                </div>
+                <div class="form-field">
+                  <label for="s_pulses">Nombre d’impulsions</label>
+                  <input id="s_pulses" class="input" type="number" min="0" max="200000" step="1" placeholder="ex. 3000" />
+                </div>
+                <div class="form-field">
+                  <label for="s_duree">Durée (min)</label>
+                  <input id="s_duree" class="input" type="number" min="0" max="300" step="1" placeholder="ex. 20" />
+                </div>
+              </div>
+            </details>
+
+            <div class="divider"></div>
+            <h3 class="subhead">Tolérance / symptômes (NRS 0–10)</h3>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label for="s_douleurPre">Douleur avant</label>
+                <input id="s_douleurPre" class="input" type="number" min="0" max="10" step="1" placeholder="0–10" />
+              </div>
+              <div class="form-field">
+                <label for="s_douleurPost">Douleur après</label>
+                <input id="s_douleurPost" class="input" type="number" min="0" max="10" step="1" placeholder="0–10" />
+              </div>
+              <div class="form-field">
+                <label for="s_tolerance">Tolérance</label>
+                <input id="s_tolerance" class="input" type="number" min="0" max="10" step="1" placeholder="0–10" />
+                <div class="field-help">0 = mauvaise, 10 = excellente</div>
+              </div>
+              <div class="form-field">
+                <label for="s_effets">Effets / remarque</label>
+                <input id="s_effets" class="input" type="text" placeholder="ex. céphalée légère…" />
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button id="btnSaveSeance" class="btn" type="submit">Enregistrer</button>
+              <button id="btnDeleteSeance" class="btn btn-danger" type="button">Supprimer</button>
+              <span id="seanceFormStatus" class="status" aria-live="polite"></span>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-suivi" class="view hidden" aria-labelledby="hSuivi">
+      <div class="view-header">
+        <h1 id="hSuivi">Suivi clinique</h1>
+        <div class="view-actions">
+          <select id="selPatientSuivi" class="input" aria-label="Choisir un patient"></select>
+          <button id="btnNewSuivi" class="btn" type="button">+ Ajouter</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2>Historique</h2>
+          <div id="suiviList" class="list" role="list"></div>
+        </div>
+
+        <div class="card">
+          <h2>Saisie suivi</h2>
+          <form id="formSuivi" autocomplete="off">
+            <input id="f_id" type="hidden" />
+            <div class="form-row">
+              <div class="form-field">
+                <label for="f_date">Date *</label>
+                <input id="f_date" class="input" type="date" />
+              </div>
+              <div class="form-field">
+                <label for="f_temps">Temps *</label>
+                <select id="f_temps" class="input">
+                  <option value="">—</option>
+                  <option value="inclusion">Inclusion</option>
+                  <option value="sem2">Semaine 2</option>
+                  <option value="sem4">Semaine 4</option>
+                  <option value="fin">Fin de cure</option>
+                  <option value="m1">1 mois</option>
+                  <option value="m3">3 mois</option>
+                  <option value="autre">Autre</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label for="f_douleur">Douleur (0–10)</label>
+                <input id="f_douleur" class="input" type="number" min="0" max="10" step="1" placeholder="0–10" />
+                <div class="field-help">0 = aucune, 10 = maximale</div>
+              </div>
+              <div class="form-field">
+                <label for="f_fatigue">Fatigue (0–10)</label>
+                <input id="f_fatigue" class="input" type="number" min="0" max="10" step="1" placeholder="0–10" />
+              </div>
+              <div class="form-field">
+                <label for="f_sommeil">Sommeil (0–10)</label>
+                <input id="f_sommeil" class="input" type="number" min="0" max="10" step="1" placeholder="0–10" />
+              </div>
+              <div class="form-field">
+                <label for="f_humeur">Humeur (0–10)</label>
+                <input id="f_humeur" class="input" type="number" min="0" max="10" step="1" placeholder="0–10" />
+              </div>
+            </div>
+
+            <details class="more">
+              <summary>Champs optionnels (ouvrir)</summary>
+              <div class="form-row">
+                <div class="form-field">
+                  <label for="f_pgic">Amélioration globale (PGIC 1–7)</label>
+                  <input id="f_pgic" class="input" type="number" min="1" max="7" step="1" placeholder="1–7" />
+                  <div class="field-help">1 = très amélioré, 7 = très aggravé (à adapter si besoin)</div>
+                </div>
+                <div class="form-field">
+                  <label for="f_antalgiques">Antalgiques (texte)</label>
+                  <input id="f_antalgiques" class="input" type="text" placeholder="changement, dose…" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-field">
+                  <label for="f_notes">Notes</label>
+                  <textarea id="f_notes" class="input" rows="3" placeholder="Éléments cliniques, facteurs confondants…"></textarea>
+                </div>
+              </div>
+            </details>
+
+            <div class="form-actions">
+              <button id="btnSaveSuivi" class="btn" type="submit">Enregistrer</button>
+              <button id="btnDeleteSuivi" class="btn btn-danger" type="button">Supprimer</button>
+              <span id="suiviFormStatus" class="status" aria-live="polite"></span>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-ei" class="view hidden" aria-labelledby="hEI">
+      <div class="view-header">
+        <h1 id="hEI">Événements indésirables</h1>
+        <div class="view-actions">
+          <select id="selPatientEI" class="input" aria-label="Choisir un patient"></select>
+          <button id="btnNewEI" class="btn" type="button">+ Ajouter</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2>Historique</h2>
+          <div id="eiList" class="list" role="list"></div>
+        </div>
+
+        <div class="card">
+          <h2>Saisie EI</h2>
+          <form id="formEI" autocomplete="off">
+            <input id="e_id" type="hidden" />
+            <div class="form-row">
+              <div class="form-field">
+                <label for="e_date">Date *</label>
+                <input id="e_date" class="input" type="date" />
+              </div>
+              <div class="form-field">
+                <label for="e_severite">Sévérité *</label>
+                <select id="e_severite" class="input">
+                  <option value="">—</option>
+                  <option value="leger">Léger</option>
+                  <option value="modere">Modéré</option>
+                  <option value="severe">Sévère</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label for="e_lien">Lien avec rTMS *</label>
+                <select id="e_lien" class="input">
+                  <option value="">—</option>
+                  <option value="oui">Oui</option>
+                  <option value="non">Non</option>
+                  <option value="incertain">Incertain</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label for="e_description">Description *</label>
+                <textarea id="e_description" class="input" rows="3" placeholder="Symptômes, contexte, temporalité…"></textarea>
+              </div>
+            </div>
+
+            <details class="more">
+              <summary>Champs optionnels (ouvrir)</summary>
+              <div class="form-row">
+                <div class="form-field">
+                  <label for="e_action">Action</label>
+                  <input id="e_action" class="input" type="text" placeholder="ex. adaptation, pause, arrêt…" />
+                </div>
+                <div class="form-field">
+                  <label for="e_issue">Issue</label>
+                  <select id="e_issue" class="input">
+                    <option value="">—</option>
+                    <option value="resolu">Résolu</option>
+                    <option value="en_cours">En cours</option>
+                    <option value="sequelles">Séquelles</option>
+                    <option value="inconnu">Inconnu</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label for="e_dateResolution">Date de résolution</label>
+                  <input id="e_dateResolution" class="input" type="date" />
+                </div>
+              </div>
+            </details>
+
+            <div class="form-actions">
+              <button id="btnSaveEI" class="btn" type="submit">Enregistrer</button>
+              <button id="btnDeleteEI" class="btn btn-danger" type="button">Supprimer</button>
+              <span id="eiFormStatus" class="status" aria-live="polite"></span>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-qualite" class="view hidden" aria-labelledby="hQualite">
+      <div class="view-header">
+        <h1 id="hQualite">Qualité des données</h1>
+        <div class="view-actions">
+          <button id="btnRunQuality" class="btn" type="button">Analyser</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2>Résumé</h2>
+          <div id="qualitySummary" class="quality-summary"></div>
+          <div class="hint">Les règles v0.1.x sont volontairement simples. Elles sont faites pour détecter les trous évidents et les incohérences grossières.</div>
+        </div>
+        <div class="card">
+          <h2>Détails</h2>
+          <div id="qualityDetails" class="quality-details"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-export" class="view hidden" aria-labelledby="hExport">
+      <div class="view-header">
+        <h1 id="hExport">Export</h1>
+        <div class="view-actions">
+          <select id="selPatientExport" class="input" aria-label="Choisir un patient"></select>
+          <button id="btnOpenClinicalSummary" class="btn" type="button">Synthèse clinique (PDF)</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2>Export CSV</h2>
+          <p class="p">Chaque bouton télécharge un CSV exploitable (une “table” par type de données).</p>
+          <div class="btn-row" style="margin-bottom:10px;">
+            <button id="btnExportAllRegistry" class="btn" type="button">Tout le registre (1 clic)</button>
+            <span id="exportAllStatus" class="status" aria-live="polite"></span>
+          </div>
+          <div class="btn-row">
+            <button id="btnExportPatientsCsv" class="btn btn-secondary" type="button">patients.csv</button>
+            <button id="btnExportSeancesCsv" class="btn btn-secondary" type="button">seances.csv</button>
+            <button id="btnExportSuiviCsv" class="btn btn-secondary" type="button">suivi.csv</button>
+            <button id="btnExportEiCsv" class="btn btn-secondary" type="button">evenements_indesirables.csv</button>
+          </div>
+          <div class="divider"></div>
+          <p class="p">Backup complet (JSON) : via le bouton “Backup” en haut (restauration avec “Import”).</p>
+        </div>
+
+        <div class="card">
+          <h2>Synthèse clinique (PDF)</h2>
+          <p class="p">Produit une page imprimable. Pour obtenir un PDF : ouvre la synthèse, puis “Imprimer” → “Enregistrer en PDF”.</p>
+          <div class="hint">Choisis un patient ci-dessus. Le document regroupe : inclusion, séances, suivi, EI.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-dictionnaire" class="view hidden" aria-labelledby="hDict">
+      <div class="view-header">
+        <h1 id="hDict">Dictionnaire de données (v1)</h1>
+        <div class="view-actions">
+          <button id="btnDownloadDict" class="btn btn-secondary" type="button">Télécharger (CSV)</button>
+        </div>
+      </div>
+      <div class="card">
+        <div id="dictTable" class="dict"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div>Local uniquement • aucune donnée envoyée • stockage sur ce navigateur</div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

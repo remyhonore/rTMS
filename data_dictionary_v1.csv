@@ -1,0 +1,62 @@
+table;field;label;type;required;values;notes
+patients;patient_id;ID patient;texte;oui;P0001…;Identifiant interne. Généré automatiquement.
+patients;initiales;Initiales;texte;oui;—;Limiter les identifiants directs (pas de nom/prénom).
+patients;annee_naissance;Année de naissance;entier;oui;1900–2100;Préférer année plutôt que date complète.
+patients;sexe;Sexe;catégoriel;oui;F/M/X/ND;ND = non précisé.
+patients;date_inclusion;Date d’inclusion;date;oui;AAAA-MM-JJ;Point de départ temporel des contrôles de cohérence.
+patients;indication;Indication principale;catégoriel;oui;fibromyalgie/douleur_neuropathique/post_infectieux/douleur_rebelle/autre;À adapter à la file active.
+patients;centre;Centre;texte;oui;—;Nom court du centre/structure.
+patients;consentement;Consentement;catégoriel;oui;oui/non;Bloquant pour inclusion en vie réelle selon procédures locales.
+patients;douleur_base;Douleur de base (NRS);entier;oui;0–10;0 = aucune, 10 = maximale.
+patients;fatigue_base;Fatigue de base (NRS);entier;non;0–10;Optionnel.
+patients;sommeil_base;Sommeil de base (NRS);entier;non;0–10;0 = très mauvais, 10 = excellent.
+patients;humeur_base;Humeur de base (NRS);entier;non;0–10;0 = très mauvaise, 10 = excellente.
+patients;antalgiques;Antalgiques (texte);texte;non;—;Texte libre (pratique en V1).
+patients;notes;Notes;texte;non;—;Texte libre.
+patients;created_at;Créé le;datetime;oui;ISO;Auto.
+patients;updated_at;Mis à jour le;datetime;oui;ISO;Auto.
+seances;seance_id;ID séance;texte;oui;S…;Identifiant interne. Auto.
+seances;patient_id;ID patient;texte;oui;P…;Lien vers patients.patient_id.
+seances;date;Date séance;date;oui;AAAA-MM-JJ;Doit être ≥ date d’inclusion.
+seances;numero;Numéro de séance;entier;oui;1…;Unique par patient.
+seances;cible;Cible;catégoriel;non;DLPFC/M1/SMA/autre;Optionnel.
+seances;lateralite;Latéralité;catégoriel;non;gauche/droite/bilaterale;Optionnel.
+seances;frequence_hz;Fréquence;decimal;non;0–100;Hz.
+seances;intensite_pct_mt;Intensité (% seuil moteur);entier;non;0–200;Contrôle de cohérence large en V1.
+seances;pulses;Nombre d’impulsions;entier;non;0–200000;Optionnel.
+seances;duree_min;Durée;entier;non;0–300;Minutes.
+seances;douleur_pre;Douleur avant (NRS);entier;non;0–10;Optionnel.
+seances;douleur_post;Douleur après (NRS);entier;non;0–10;Optionnel.
+seances;tolerance;Tolérance;entier;non;0–10;0 = mauvaise, 10 = excellente.
+seances;effets;Effets / remarque;texte;non;—;Texte libre.
+seances;created_at;Créé le;datetime;oui;ISO;Auto.
+seances;updated_at;Mis à jour le;datetime;oui;ISO;Auto.
+suivi;suivi_id;ID suivi;texte;oui;F…;Identifiant interne. Auto.
+suivi;patient_id;ID patient;texte;oui;P…;Lien vers patients.patient_id.
+suivi;date;Date;date;oui;AAAA-MM-JJ;Doit être ≥ date d’inclusion.
+suivi;temps;Temps;catégoriel;oui;inclusion/sem2/sem4/fin/m1/m3/autre;À adapter au protocole.
+suivi;point_protocole;Point protocole;texte;non;S0/S10… ou W0/W2…;Optionnel. Permet une couverture réalisé/attendu et une timeline protocole.
+suivi;douleur;Douleur (NRS);entier;non;0–10;Optionnel.
+suivi;fatigue;Fatigue (NRS);entier;non;0–10;Optionnel.
+suivi;sommeil;Sommeil (NRS);entier;non;0–10;0 = très mauvais, 10 = excellent.
+suivi;humeur;Humeur (NRS);entier;non;0–10;0 = très mauvaise, 10 = excellente.
+suivi;pgic;PGIC;entier;non;1–7;Échelle à harmoniser selon centre (ici, repère par défaut).
+suivi;antalgiques;Antalgiques (texte);texte;non;—;Texte libre.
+suivi;notes;Notes;texte;non;—;Texte libre.
+suivi;created_at;Créé le;datetime;oui;ISO;Auto.
+suivi;updated_at;Mis à jour le;datetime;oui;ISO;Auto.
+evenements_indesirables;ei_id;ID EI;texte;oui;E…;Identifiant interne. Auto.
+evenements_indesirables;patient_id;ID patient;texte;oui;P…;Lien vers patients.patient_id.
+evenements_indesirables;date;Date;date;oui;AAAA-MM-JJ;Doit être ≥ date d’inclusion.
+evenements_indesirables;severite;Sévérité;catégoriel;oui;leger/modere/severe;V1 : 3 niveaux.
+evenements_indesirables;lien_rtms;Lien avec rTMS;catégoriel;oui;oui/non/incertain;Imputabilité simplifiée.
+evenements_indesirables;description;Description;texte;oui;—;Temporalité + symptômes + contexte.
+evenements_indesirables;action;Action;texte;non;—;Adaptation, pause, arrêt…
+evenements_indesirables;issue;Issue;catégoriel;non;resolu/en_cours/sequelles/inconnu;Optionnel.
+evenements_indesirables;date_resolution;Date de résolution;date;non;AAAA-MM-JJ;Doit être ≥ date EI.
+evenements_indesirables;created_at;Créé le;datetime;oui;ISO;Auto.
+evenements_indesirables;updated_at;Mis à jour le;datetime;oui;ISO;Auto.
+protocole;centre;Centre (optionnel);texte;non;—;Vide = global. Sinon : protocole spécifique à un centre.
+protocole;seances_attendues;Séances attendues;entier;non;0–200;Optionnel. Sert au calcul réalisé/attendu.
+protocole;mode_points;Mode points;catégoriel;non;seance/semaine;Définit le préfixe S ou W.
+protocole;points_attendus;Points attendus;liste;non;0,10,20,30…;Liste de points numériques (préfixe géré par le mode).
