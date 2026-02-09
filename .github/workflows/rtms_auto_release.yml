@@ -1,0 +1,30 @@
+name: rTMS — Auto Release (ZIP)
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  package_zip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build ZIP
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          ZIP="Registre_rTMS_douleur_${TAG}.zip"
+          zip -r "$ZIP" . \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x "**/.DS_Store"
+          echo "ZIP=$ZIP" >> $GITHUB_ENV
+
+      - name: Upload asset to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ZIP }}
